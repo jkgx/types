@@ -10,6 +10,48 @@ import (
 	"time"
 )
 
+// swagger:type string
+type NullString string
+
+// MarshalJSON returns m as the JSON encoding of m.
+func (ns NullString) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(ns))
+}
+
+// UnmarshalJSON sets *m to a copy of data.
+func (ns *NullString) UnmarshalJSON(data []byte) error {
+	if ns == nil {
+		return errors.New("json.RawMessage: UnmarshalJSON on nil pointer")
+	}
+	if len(data) == 0 {
+		return nil
+	}
+	return errors.WithStack(json.Unmarshal(data, ns))
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullString) Scan(value interface{}) error {
+	var v sql.NullString
+	if err := (&v).Scan(value); err != nil {
+		return err
+	}
+	*ns = NullString(v.String)
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullString) Value() (driver.Value, error) {
+	if len(ns) == 0 {
+		return sql.NullString{}.Value()
+	}
+	return sql.NullString{Valid: true, String: string(ns)}.Value()
+}
+
+// String implements the Stringer interface.
+func (ns NullString) String() string {
+	return string(ns)
+}
+
 // NullTime implements sql.NullTime functionality.
 type NullTime time.Time
 
